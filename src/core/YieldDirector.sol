@@ -5,46 +5,48 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
-interface ISmartVault {
-    function asset() external view returns (address);
-    function pushToDirector(uint256 amount) external;
-}
-
 interface IAdapter {
-    function deposit(uint256 amount) external returns (uint256);
-    function setDirector(address newDirector) external;
+    function deposit(uint256 amount) external;
 }
 
 contract YieldDirector is Ownable {
     using SafeERC20 for IERC20;
 
+    IERC20 public immutable asset;
+    address public vault;
     address public adapter;
 
-    event Rebalanced(address indexed vault, uint256 amount, address indexed adapter);
-    event AdapterUpdated(address indexed oldAdapter, address indexed newAdapter);
-
-    constructor() Ownable(msg.sender) {}
-
-    function setAdapter(address _adapter) external onlyOwner {
-        emit AdapterUpdated(adapter, _adapter);
-        adapter = _adapter;
+    constructor(address _asset) Ownable(msg.sender) {
+        asset = IERC20(_asset);
     }
 
-    function rebalance(address vault) external onlyOwner {
-        require(adapter != address(0), "No adapter set");
+    // Wiring Configuration
+    function setVault(address _vault) external onlyOwner {
+        vault = _vault;
+    }
 
-        IERC20 asset = IERC20(ISmartVault(vault).asset());
-        uint256 vaultBal = asset.balanceOf(vault);
+    function setAdapter(address _adapter) external onlyOwner {
+        adapter = _adapter;
+        // Approve the adapter to spend our funds
+        asset.approve(_adapter, type(uint256).max);
+    }
+
+    // The Action Button
+    function rebalance() external {
+        require(vault != address(0), "Vault not set");
+        require(adapter != address(0), "Adapter not set");
+
+        uint256 vaultBalance = asset.balanceOf(vault);
         
-        if (vaultBal > 0) {
-            ISmartVault(vault).pushToDirector(vaultBal);
-        }
+        if (vaultBalance > 0) {
+            // 1. Pull funds from Vault (Vault must allow this)
+            asset.safeTransferFrom(vault, address(this), vaultBalance);
+            
+            // 2. Push funds to Adapter
+            asset.safeTransfer(adapter, vaultBalance);
 
-        uint256 myBal = asset.balanceOf(address(this));
-        if (myBal > 0) {
-            asset.forceApprove(adapter, myBal);
-            IAdapter(adapter).deposit(myBal);
-            emit Rebalanced(vault, myBal, adapter);
+            // 3. Execute Strategy
+            IAdapter(adapter).deposit(vaultBalance);
         }
     }
 }
