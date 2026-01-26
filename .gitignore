@@ -1,9 +1,12 @@
-# Foundry Build Artifacts (Heavy junk)
+# Foundry
 out/
 cache/
 broadcast/
+dist/
 
-# Security (NEVER COMMIT THESE)
+# Environment
 .env
 .DS_Store
-keystore/
+
+# Libs (We track these via submodules, not raw files)
+lib/
