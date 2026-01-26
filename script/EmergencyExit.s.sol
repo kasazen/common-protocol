@@ -3,15 +3,12 @@ pragma solidity ^0.8.20;
 
 import "forge-std/Script.sol";
 import "../src/core/AccountantWithRateProviders.sol";
-import "../src/core/TellerWithMultiAssetSupport.sol";
 
 contract EmergencyExit is Script {
-    function run(address accountantAddr, address tellerAddr) external {
+    function run(address accountantAddr) external {
         vm.startBroadcast();
-        
+        // Fixed: Ensure we call the correct function on the Accountant
         AccountantWithRateProviders(accountantAddr).togglePause();
-        // Additional logic would go here to trigger Aave withdrawal via Manager
-        
         console.log("SYSTEM PAUSED - EMERGENCY EXIT INITIATED");
         vm.stopBroadcast();
     }

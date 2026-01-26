@@ -5,43 +5,50 @@ import {ERC20} from "solmate/tokens/ERC20.sol";
 import {SafeTransferLib} from "solmate/utils/SafeTransferLib.sol";
 import {Auth, Authority} from "solmate/auth/Auth.sol";
 import "../base/BoringVault.sol";
-import "../hooks/WorldIDHook.sol";
+import "./AccountantWithRateProviders.sol";
 
 contract TellerWithMultiAssetSupport is Auth {
     using SafeTransferLib for ERC20;
-
     BoringVault public immutable VAULT;
-    WorldIDHook public immutable HOOK;
+    AccountantWithRateProviders public immutable ACCOUNTANT;
     
     mapping(address => uint256) public depositTimestamp;
     uint256 public constant SHARE_LOCK_PERIOD = 1 days;
 
-    error Teller__SharesLocked();
-    error Teller__NotVerifiedHuman();
+    struct HumanStatus {
+        bool isVerified;
+        bool gasSubsidyActive;
+        uint256 currentYieldBoost;
+    }
 
-    constructor(address _owner, address _vault, address _hook) 
+    constructor(address _owner, address _vault, address _accountant) 
         Auth(_owner, Authority(address(0))) 
     {
-        VAULT = BoringVault(_vault);
-        HOOK = WorldIDHook(_hook);
+        VAULT = BoringVault(payable(_vault));
+        ACCOUNTANT = AccountantWithRateProviders(_accountant);
     }
 
-    function deposit(ERC20 asset, uint256 amount, uint256) external returns (uint256 shares) {
-        // WORLD ID GATE: Strictly Human Only
-        if (!HOOK.isVerified(msg.sender)) revert Teller__NotVerifiedHuman();
+    function getHumanStatus(address user) public view returns (HumanStatus memory) {
+        bool verified = ACCOUNTANT.HOOK().isVerified(user);
+        return HumanStatus(verified, verified, verified ? 2000 : 0);
+    }
 
+    function deposit(ERC20 asset, uint256 amount) external returns (uint256 shares) {
+        if (!ACCOUNTANT.HOOK().isVerified(msg.sender)) revert("NotHuman");
         asset.safeTransferFrom(msg.sender, address(VAULT), amount);
-        
-        shares = amount; // 1:1 Initial
+        shares = amount; 
         VAULT.enter(msg.sender, asset, amount, msg.sender, shares);
-        
         depositTimestamp[msg.sender] = block.timestamp;
+        ACCOUNTANT.recordInteraction(msg.sender);
     }
 
-    function withdraw(uint256 shares, uint256) external {
-        if (block.timestamp < depositTimestamp[msg.sender] + SHARE_LOCK_PERIOD) 
-            revert Teller__SharesLocked();
-        
+    function ping() external {
+        if (!ACCOUNTANT.HOOK().isVerified(msg.sender)) revert("NotHuman");
+        ACCOUNTANT.recordInteraction(msg.sender);
+    }
+
+    function withdraw(uint256 shares) external {
+        require(block.timestamp >= depositTimestamp[msg.sender] + SHARE_LOCK_PERIOD, "LOCKED");
         VAULT.exit(msg.sender, VAULT.asset(), shares, msg.sender, shares);
     }
 }

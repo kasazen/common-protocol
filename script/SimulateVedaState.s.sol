@@ -8,7 +8,6 @@ import "../src/core/TellerWithMultiAssetSupport.sol";
 import "../src/core/AccountantWithRateProviders.sol";
 import "../src/core/RevenueSplitter.sol";
 import "../src/hooks/WorldIDHook.sol";
-import {ERC20} from "solmate/tokens/ERC20.sol";
 import {MockERC20} from "solmate/test/utils/mocks/MockERC20.sol";
 
 contract SimulateVedaState is Script {
@@ -17,24 +16,23 @@ contract SimulateVedaState is Script {
         
         MockERC20 usdc = new MockERC20("USDC", "USDC", 6);
         WorldIDHook hook = new WorldIDHook();
-        RevenueSplitter splitter = new RevenueSplitter(msg.sender, address(0x123)); // Main & Test
+        RevenueSplitter splitter = new RevenueSplitter(msg.sender, address(0x123)); 
         
-        // Match the 5 arguments: Owner, Asset, Hook, Splitter, Oracle
+        // Match 4 arguments: Owner, Asset, Hook, Splitter
         AccountantWithRateProviders accountant = new AccountantWithRateProviders(
             msg.sender, 
             address(usdc), 
             address(hook), 
-            address(splitter), 
-            address(0) // Oracle dummy
+            address(splitter)
         );
         
-        BoringVault vault = new BoringVault(msg.sender, "Veda", "vWY", usdc);
+        BoringVault vault = new BoringVault(payable(msg.sender), "Veda", "vWY", usdc);
         ManagerWithMerkleVerification manager = new ManagerWithMerkleVerification(msg.sender, address(vault));
-        TellerWithMultiAssetSupport teller = new TellerWithMultiAssetSupport(msg.sender, address(vault), address(hook));
+        TellerWithMultiAssetSupport teller = new TellerWithMultiAssetSupport(msg.sender, address(vault), address(accountant));
 
+        accountant.setTeller(address(teller));
         vault.setManager(address(manager)); 
-        vault.transferOwnership(address(teller)); 
-
+        
         vm.stopBroadcast();
     }
 }

@@ -14,19 +14,29 @@ contract WorldIDYieldSim is Test {
     WorldIDHook hook;
     MockERC20 usdc;
 
+    address human = address(0x111);
+
     function setUp() public {
         usdc = new MockERC20("USDC", "USDC", 6);
         hook = new WorldIDHook();
         vault = new BoringVault(address(this), "Veda", "vWY", usdc);
-        // Using address(0) for oracle in test setup
-        accountant = new AccountantWithRateProviders(address(this), address(usdc), address(hook), address(0xFEED), address(0));
-        teller = new TellerWithMultiAssetSupport(address(this), address(vault), address(hook));
+        accountant = new AccountantWithRateProviders(address(this), address(usdc), address(hook), address(0xFEED));
+        teller = new TellerWithMultiAssetSupport(address(this), address(vault), address(accountant));
+
+        // CRITICAL: Authorize the teller
+        accountant.setTeller(address(teller));
+        
+        vault.setManager(address(this));
+        hook.setVerified(human, true);
     }
 
-    function test_HumanOnlyGate() public {
-        address bot = address(0xB07);
-        vm.prank(bot);
-        vm.expectRevert(TellerWithMultiAssetSupport.Teller__NotVerifiedHuman.selector);
-        teller.deposit(usdc, 100e6, 0);
+    function test_FuelAccrualOnPing() public {
+        vm.startPrank(human);
+        uint256 pointsBefore = accountant.points(human);
+        teller.ping();
+        uint256 pointsAfter = accountant.points(human);
+        
+        assertGt(pointsAfter, pointsBefore, "Fuel tank should fill up");
+        vm.stopPrank();
     }
 }

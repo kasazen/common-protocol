@@ -15,22 +15,17 @@ contract FeeCollectionSim is Test {
     function setUp() public {
         usdc = new MockERC20("USDC", "USDC", 6);
         hook = new WorldIDHook();
-        // Fixed: Added 5th argument (address(0) for Oracle)
         accountant = new AccountantWithRateProviders(
             address(this), 
             address(usdc), 
             address(hook), 
-            feeSplitter, 
-            address(0)
+            feeSplitter
         );
     }
 
     function test_PerformanceFeeLogic() public {
         uint256 grossNewRate = 1.0008e18; 
         accountant.updateRate(grossNewRate);
-        uint256 finalRate = accountant.lastRate();
-        
-        // Profit 8bps -> 2bps fee (25%) -> 6bps net
-        assertEq(finalRate, 1.0006e18, "Users should see 75% of profit");
+        assertEq(accountant.lastRate(), 1.0006e18);
     }
 }
