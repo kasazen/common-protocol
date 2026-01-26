@@ -2,11 +2,7 @@
 out/
 cache/
 broadcast/
-dist/
+/lib
 
-# Environment
+# Secrets
 .env
-.DS_Store
-
-# Libs (We track these via submodules, not raw files)
-lib/

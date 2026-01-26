@@ -4,8 +4,11 @@ pragma solidity ^0.8.20;
 import {ERC20} from "solmate/tokens/ERC20.sol";
 import {Auth, Authority} from "solmate/auth/Auth.sol";
 import {ERC4626} from "solmate/tokens/ERC4626.sol";
+import {SafeTransferLib} from "solmate/utils/SafeTransferLib.sol";
 
 contract BoringVault is ERC4626, Auth {
+    using SafeTransferLib for ERC20;
+
     address public manager;
     error BoringVault__OnlyManager();
 
@@ -25,15 +28,13 @@ contract BoringVault is ERC4626, Auth {
         manager = _manager;
     }
 
-    // FIX: Removed 'asset.transferFrom'. 
-    // The Teller handles the transfer; the Vault just mints.
-    function enter(address from, ERC20 asset, uint256 amount, address to, uint256 shares) external requiresAuth {
+    function enter(address, ERC20, uint256, address to, uint256 shares) external requiresAuth {
         _mint(to, shares);
     }
 
-    function exit(address to, ERC20 asset, uint256 amount, address from, uint256 shares) external requiresAuth {
+    function exit(address to, ERC20 _asset, uint256 amount, address from, uint256 shares) external requiresAuth {
         _burn(from, shares);
-        asset.transfer(to, amount);
+        _asset.safeTransfer(to, amount);
     }
 
     function totalAssets() public view override returns (uint256) {

@@ -2,10 +2,18 @@
 pragma solidity ^0.8.20;
 
 contract WorldIDHook {
-    address public constant WORLD_ID_ROUTER = 0x17B354dD2595411ff79041f930e491A4Df39A278;
+    mapping(address => bool) public verifiedHumans;
 
-    function beforeDeposit(address, uint256) external view {
-        // Verification logic placeholder
-        // In production, we call IWorldIDRouter(WORLD_ID_ROUTER).verifyProof(...)
+    function beforeDeposit(address user, uint256 amount) external {
+        // In production, this checks the WorldID Router
+    }
+
+    function isVerified(address user) external view returns (bool) {
+        return verifiedHumans[user];
+    }
+
+    function setVerified(address user, bool status) external {
+        // For testing/internal admin use
+        verifiedHumans[user] = status;
     }
 }
