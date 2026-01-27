@@ -9,8 +9,10 @@ contract ManagerWithMerkleVerification is Auth {
     BoringVault public immutable vault;
     bytes32 public manageRoot;
 
+    // THE HEARTBEAT EVENTS
     event ManageRootUpdated(bytes32 oldRoot, bytes32 newRoot);
-    // The Voice of the protocol for the frontend feed
+    
+    // New: The "Voice" of the protocol for the frontend feed
     event VaultPulse(string action, string rationale, uint256 timestamp);
 
     error Manager__InvalidProof();
@@ -25,8 +27,9 @@ contract ManagerWithMerkleVerification is Auth {
     }
 
     /**
-     * @notice The Voice of the Vault.
+     * @notice The "Voice" of the Vault.
      * @dev Allows the manager to log a public explanation for an action.
+     * e.g. action="Harvest", rationale="Compounding Morpho Rewards into USDC"
      */
     function pulse(string calldata action, string calldata rationale) external requiresAuth {
         emit VaultPulse(action, rationale, block.timestamp);

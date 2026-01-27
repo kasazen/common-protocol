@@ -8,6 +8,7 @@ import {SafeTransferLib} from "solmate/utils/SafeTransferLib.sol";
 
 contract BoringVault is ERC4626, Auth {
     using SafeTransferLib for ERC20;
+
     address public manager;
     error BoringVault__OnlyManager();
 

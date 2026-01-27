@@ -9,20 +9,20 @@ import {AccountantWithRateProviders} from "../src/core/AccountantWithRateProvide
 import {RevenueSplitter} from "../src/core/RevenueSplitter.sol";
 import {VedaArcticLens} from "../src/core/VedaArcticLens.sol";
 import {WorldIDHook} from "../src/hooks/WorldIDHook.sol";
+import {MorphoBlueDecoder} from "../src/decoders/MorphoBlueDecoder.sol";
 import {ERC20} from "solmate/tokens/ERC20.sol";
 
 contract DeployVedaArctic is Script {
     function run() external {
-        address usdcAddr = 0x79A02482A880bCE3F13e09Da970dC34db4CD24d1; 
-        address aavePool = 0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2;
+        address usdcAddr = 0x79A02482A880bCE3F13e09Da970dC34db4CD24d1;
+        address morphoBlueAddr = 0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb;
         
-        address mainOwner = msg.sender;
-        address testWallet = address(0xDEAFBEEF); 
-
         vm.startBroadcast();
+        address mainOwner = msg.sender;
+        address partnerWallet = address(0xDEAFBEEF); 
 
-        WorldIDHook hook = new WorldIDHook(); 
-        RevenueSplitter splitter = new RevenueSplitter(mainOwner, testWallet);
+        WorldIDHook hook = new WorldIDHook();
+        RevenueSplitter splitter = new RevenueSplitter(mainOwner, partnerWallet);
         VedaArcticLens lens = new VedaArcticLens();
 
         AccountantWithRateProviders accountant = new AccountantWithRateProviders(
@@ -30,21 +30,17 @@ contract DeployVedaArctic is Script {
         );
 
         BoringVault vault = new BoringVault(payable(mainOwner), "Veda Arctic USDC", "vUSDC", ERC20(usdcAddr));
-        
-        ManagerWithMerkleVerification manager = new ManagerWithMerkleVerification(
-            mainOwner, address(vault)
-        );
-
-        TellerWithMultiAssetSupport teller = new TellerWithMultiAssetSupport(
-            mainOwner, address(vault), address(accountant)
-        );
+        ManagerWithMerkleVerification manager = new ManagerWithMerkleVerification(mainOwner, address(vault));
+        TellerWithMultiAssetSupport teller = new TellerWithMultiAssetSupport(mainOwner, address(vault), address(accountant));
+        MorphoBlueDecoder morphoDecoder = new MorphoBlueDecoder(morphoBlueAddr, usdcAddr);
 
         accountant.setTeller(address(teller));
         vault.setManager(address(manager));
-        accountant.updateStrategy(aavePool, 10000, 450);
-
         vm.stopBroadcast();
 
-        console.log("Lens Deployed at:", address(lens));
+        console.log("=== VEDA ARCTIC DEPLOYED ===");
+        console.log("Vault:", address(vault));
+        console.log("Lens:", address(lens));
+        console.log("Manager:", address(manager));
     }
 }

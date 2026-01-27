@@ -1,10 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
+
 import {ERC20} from "solmate/tokens/ERC20.sol";
 import {SafeTransferLib} from "solmate/utils/SafeTransferLib.sol";
 
 contract RevenueSplitter {
     using SafeTransferLib for ERC20;
+
     address public immutable PARTNER_MAIN;
     address public immutable PARTNER_TEST;
     
