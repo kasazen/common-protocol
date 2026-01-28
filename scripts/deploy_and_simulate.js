@@ -1,4 +1,4 @@
-const hre = require("hardhat");
+import hre from "hardhat";
 
 async function main() {
   console.log("🚀 Starting Common Protocol (Local Mode)...");
@@ -22,6 +22,7 @@ async function main() {
 
   // 2. Simulate
   console.log("   > Contracts Deployed.");
+  
   console.log("   > Verifying User...");
   await gate.setVerification(user1.address, true);
 
