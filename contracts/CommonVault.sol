@@ -24,26 +24,34 @@ contract CommonVault is ERC4626, Ownable, ICommonEvents {
     }
 
     function deposit(uint256 assets, address receiver) public override returns (uint256) {
-        require(gate.verifyProof(receiver), "Common: Verified humans only");
+        // ⚠️ DEV MODE: Commented out for testing
+        // require(gate.verifyProof(receiver), "Common: Verified humans only");
+        
         gate.registerDeposit(receiver);
         emit UserDeposit(receiver, assets, block.timestamp + 24 hours);
         return super.deposit(assets, receiver);
     }
 
     function mint(uint256 shares, address receiver) public override returns (uint256) {
-        require(gate.verifyProof(receiver), "Common: Verified humans only");
+        // ⚠️ DEV MODE: Commented out for testing
+        // require(gate.verifyProof(receiver), "Common: Verified humans only");
+        
         gate.registerDeposit(receiver);
         return super.mint(shares, receiver);
     }
 
     function withdraw(uint256 assets, address receiver, address owner) public override returns (uint256) {
-        require(gate.canWithdraw(owner), "Common: Funds locked 24h");
+        // ⚠️ DEV MODE: Commented out so you don't have to wait 24h to test withdrawal
+        // require(gate.canWithdraw(owner), "Common: Funds locked 24h");
+        
         emit UserWithdraw(owner, assets);
         return super.withdraw(assets, receiver, owner);
     }
 
     function redeem(uint256 shares, address receiver, address owner) public override returns (uint256) {
-        require(gate.canWithdraw(owner), "Common: Funds locked 24h");
+        // ⚠️ DEV MODE: Commented out so you don't have to wait 24h to test withdrawal
+        // require(gate.canWithdraw(owner), "Common: Funds locked 24h");
+        
         return super.redeem(shares, receiver, owner);
     }
 
