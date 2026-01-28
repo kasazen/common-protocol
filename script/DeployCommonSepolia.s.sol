@@ -3,17 +3,17 @@ pragma solidity ^0.8.20;
 
 import {Script, console} from "forge-std/Script.sol";
 import {BoringVault} from "../src/base/BoringVault.sol";
-import {ManagerWithMerkleVerification} from "../src/core/ManagerWithMerkleVerification.sol";
-import {TellerWithMultiAssetSupport} from "../src/core/TellerWithMultiAssetSupport.sol";
-import {AccountantWithRateProviders} from "../src/core/AccountantWithRateProviders.sol";
+import {CommonStrategy} from "../src/core/CommonStrategy.sol";
+import {CommonGate} from "../src/core/CommonGate.sol";
+import {CommonRates} from "../src/core/CommonRates.sol";
 import {RevenueSplitter} from "../src/core/RevenueSplitter.sol";
-import {VedaArcticLens} from "../src/core/VedaArcticLens.sol";
+import {CommonWindow} from "../src/core/CommonWindow.sol";
 import {WorldIDHook} from "../src/hooks/WorldIDHook.sol";
 import {MorphoBlueDecoder} from "../src/decoders/MorphoBlueDecoder.sol";
 import {ERC20} from "solmate/tokens/ERC20.sol";
 import {MockERC20} from "solmate/test/utils/mocks/MockERC20.sol";
 
-contract DeployVedaSepolia is Script {
+contract DeployCommonSepolia is Script {
     function run() external {
         // ---------------------------------------------------------
         // 1. STRICT OWNERSHIP (Your Cold Wallet)
@@ -41,20 +41,20 @@ contract DeployVedaSepolia is Script {
         // ---------------------------------------------------------
         WorldIDHook hook = new WorldIDHook();
         RevenueSplitter splitter = new RevenueSplitter(mainOwner, partnerWallet);
-        VedaArcticLens lens = new VedaArcticLens();
+        CommonWindow window = new CommonWindow();
 
-        AccountantWithRateProviders accountant = new AccountantWithRateProviders(
+        CommonRates rates = new CommonRates(
             mainOwner, address(mockUsdc), address(hook), address(splitter)
         );
 
-        BoringVault vault = new BoringVault(payable(mainOwner), "Veda Arctic Sepolia", "vTEST", mockUsdc);
+        BoringVault vault = new BoringVault(payable(mainOwner), "Common Sepolia", "vTEST", mockUsdc);
 
-        ManagerWithMerkleVerification manager = new ManagerWithMerkleVerification(
+        CommonStrategy strategy = new CommonStrategy(
             mainOwner, address(vault)
         );
 
-        TellerWithMultiAssetSupport teller = new TellerWithMultiAssetSupport(
-            mainOwner, address(vault), address(accountant)
+        CommonGate gate = new CommonGate(
+            mainOwner, address(vault), address(rates)
         );
 
         MorphoBlueDecoder morphoDecoder = new MorphoBlueDecoder(mockMorpho, address(mockUsdc));
@@ -63,8 +63,8 @@ contract DeployVedaSepolia is Script {
         // 4. WIRING
         // ---------------------------------------------------------
         if (msg.sender == mainOwner) {
-            accountant.setTeller(address(teller));
-            vault.setManager(address(manager));
+            rates.setGate(address(gate));
+            vault.setStrategy(address(strategy));
         }
 
         vm.stopBroadcast();
@@ -73,7 +73,7 @@ contract DeployVedaSepolia is Script {
         console.log("OWNER:      ", mainOwner);
         console.log("Mock USDC:  ", address(mockUsdc));
         console.log("Vault:      ", address(vault));
-        console.log("Manager:    ", address(manager));
-        console.log("Lens:       ", address(lens));
+        console.log("Strategy:    ", address(strategy));
+        console.log("Window:       ", address(window));
     }
 }

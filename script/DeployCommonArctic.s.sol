@@ -3,16 +3,16 @@ pragma solidity ^0.8.20;
 
 import {Script, console} from "forge-std/Script.sol";
 import {BoringVault} from "../src/base/BoringVault.sol";
-import {ManagerWithMerkleVerification} from "../src/core/ManagerWithMerkleVerification.sol";
-import {TellerWithMultiAssetSupport} from "../src/core/TellerWithMultiAssetSupport.sol";
-import {AccountantWithRateProviders} from "../src/core/AccountantWithRateProviders.sol";
+import {CommonStrategy} from "../src/core/CommonStrategy.sol";
+import {CommonGate} from "../src/core/CommonGate.sol";
+import {CommonRates} from "../src/core/CommonRates.sol";
 import {RevenueSplitter} from "../src/core/RevenueSplitter.sol";
-import {VedaArcticLens} from "../src/core/VedaArcticLens.sol";
+import {CommonWindow} from "../src/core/CommonWindow.sol";
 import {WorldIDHook} from "../src/hooks/WorldIDHook.sol";
 import {MorphoBlueDecoder} from "../src/decoders/MorphoBlueDecoder.sol";
 import {ERC20} from "solmate/tokens/ERC20.sol";
 
-contract DeployVedaArctic is Script {
+contract DeployCommonArctic is Script {
     function run() external {
         // ---------------------------------------------------------
         // 1. Configuration (World Chain Mainnet Constants)
@@ -35,24 +35,24 @@ contract DeployVedaArctic is Script {
         // Core Components
         WorldIDHook hook = new WorldIDHook();
         RevenueSplitter splitter = new RevenueSplitter(mainOwner, partnerWallet);
-        VedaArcticLens lens = new VedaArcticLens();
+        CommonWindow window = new CommonWindow();
 
-        // The Brain (Accountant) - Locked to mainOwner
-        AccountantWithRateProviders accountant = new AccountantWithRateProviders(
+        // The Brain (Rates) - Locked to mainOwner
+        CommonRates rates = new CommonRates(
             mainOwner, usdcAddr, address(hook), address(splitter)
         );
 
         // The Vault (Asset Container) - Locked to mainOwner
-        BoringVault vault = new BoringVault(payable(mainOwner), "Veda Arctic USDC", "vUSDC", ERC20(usdcAddr));
+        BoringVault vault = new BoringVault(payable(mainOwner), "Common USDC", "vUSDC", ERC20(usdcAddr));
 
-        // The Manager (Security Layer) - Locked to mainOwner
-        ManagerWithMerkleVerification manager = new ManagerWithMerkleVerification(
+        // The Strategy (Security Layer) - Locked to mainOwner
+        CommonStrategy strategy = new CommonStrategy(
             mainOwner, address(vault)
         );
 
-        // The Teller (Human Gate) - Locked to mainOwner
-        TellerWithMultiAssetSupport teller = new TellerWithMultiAssetSupport(
-            mainOwner, address(vault), address(accountant)
+        // The Gate (Human Gate) - Locked to mainOwner
+        CommonGate gate = new CommonGate(
+            mainOwner, address(vault), address(rates)
         );
 
         // ---------------------------------------------------------
@@ -69,10 +69,10 @@ contract DeployVedaArctic is Script {
         
         // We assume msg.sender (deployer) == mainOwner for initial setup
         if (msg.sender == mainOwner) {
-            accountant.setTeller(address(teller));
-            vault.setManager(address(manager));
+            rates.setGate(address(gate));
+            vault.setStrategy(address(strategy));
         } else {
-            console.log("WARNING: Deployer is not Owner. You must manually call setTeller/setManager from 0xc387...");
+            console.log("WARNING: Deployer is not Owner. You must manually call setGate/setStrategy from 0xc387...");
         }
 
         vm.stopBroadcast();
@@ -82,10 +82,10 @@ contract DeployVedaArctic is Script {
         // ---------------------------------------------------------
         console.log("=== VEDA ARCTIC DEPLOYMENT COMPLETE ===");
         console.log("OWNER LOCKED TO:    ", mainOwner);
-        console.log("Lens (Frontend):    ", address(lens));
-        console.log("Teller (User Gate): ", address(teller));
+        console.log("Window (Frontend):    ", address(window));
+        console.log("Gate (User Gate): ", address(gate));
         console.log("Vault (Holdings):   ", address(vault));
-        console.log("Manager (Brain):    ", address(manager));
+        console.log("Strategy (Brain):    ", address(strategy));
         console.log("Morpho Decoder:     ", address(morphoDecoder));
     }
 }

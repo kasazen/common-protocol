@@ -5,7 +5,7 @@ import {Auth, Authority} from "solmate/auth/Auth.sol";
 import {MerkleProofLib} from "solmate/utils/MerkleProofLib.sol";
 import {BoringVault} from "../base/BoringVault.sol";
 
-contract ManagerWithMerkleVerification is Auth {
+contract CommonStrategy is Auth {
     BoringVault public immutable vault;
     bytes32 public manageRoot;
 
@@ -13,7 +13,7 @@ contract ManagerWithMerkleVerification is Auth {
     // The Voice of the protocol for the frontend feed
     event VaultPulse(string action, string rationale, uint256 timestamp);
 
-    error Manager__InvalidProof();
+    error Strategy__InvalidProof();
 
     constructor(address _owner, address _vault) Auth(_owner, Authority(address(0))) {
         vault = BoringVault(payable(_vault));
@@ -26,7 +26,7 @@ contract ManagerWithMerkleVerification is Auth {
 
     /**
      * @notice The Voice of the Vault.
-     * @dev Allows the manager to log a public explanation for an action.
+     * @dev Allows the strategy to log a public explanation for an action.
      */
     function pulse(string calldata action, string calldata rationale) external requiresAuth {
         emit VaultPulse(action, rationale, block.timestamp);
@@ -41,7 +41,7 @@ contract ManagerWithMerkleVerification is Auth {
     ) external requiresAuth {
         for (uint256 i = 0; i < targets.length; i++) {
             bytes32 leaf = keccak256(abi.encodePacked(decodersAndSanitizers[i], targets[i], data[i]));
-            if (!MerkleProofLib.verify(proofs[i], manageRoot, leaf)) revert Manager__InvalidProof();
+            if (!MerkleProofLib.verify(proofs[i], manageRoot, leaf)) revert Strategy__InvalidProof();
             vault.manage(targets[i], data[i], values[i]);
         }
     }

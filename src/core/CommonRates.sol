@@ -5,7 +5,7 @@ import {ERC20} from "solmate/tokens/ERC20.sol";
 import {Auth, Authority} from "solmate/auth/Auth.sol";
 import {WorldIDHook} from "../hooks/WorldIDHook.sol";
 
-contract AccountantWithRateProviders is Auth {
+contract CommonRates is Auth {
     ERC20 public immutable BASE_ASSET;
     WorldIDHook public immutable HOOK;
 
@@ -16,18 +16,18 @@ contract AccountantWithRateProviders is Auth {
     uint256 public constant MIN_IDLE_BPS = 1000;
 
     address public feeRecipient;
-    address public teller; 
+    address public gate; 
     bool public isPaused;
 
     mapping(address => uint256) public strategyAllocation; 
     mapping(address => uint256) public strategyApy;
     
-    // Veda Fuel State
+    // Common Fuel State
     mapping(address => uint256) public points;
     mapping(address => uint256) public lastInteraction;
     mapping(address => uint256) public loyaltyStart;
 
-    event VedaPerformance(uint256 grossYield, uint256 vedaFee, uint256 netUserYield);
+    event CommonPerformance(uint256 grossYield, uint256 vedaFee, uint256 netUserYield);
     event RateUpdated(uint256 oldRate, uint256 newRate);
 
     constructor(address _owner, address _asset, address _hook, address _recipient) 
@@ -38,8 +38,8 @@ contract AccountantWithRateProviders is Auth {
         feeRecipient = _recipient;
     }
 
-    function setTeller(address _teller) external requiresAuth {
-        teller = _teller;
+    function setGate(address _gate) external requiresAuth {
+        gate = _gate;
     }
 
     function updateStrategy(address strategy, uint256 allocation, uint256 apy) external requiresAuth {
@@ -85,7 +85,7 @@ contract AccountantWithRateProviders is Auth {
     }
 
     function recordInteraction(address user) external {
-        require(msg.sender == teller || msg.sender == owner, "UNAUTHORIZED");
+        require(msg.sender == gate || msg.sender == owner, "UNAUTHORIZED");
         lastInteraction[user] = block.timestamp;
         if (loyaltyStart[user] == 0) loyaltyStart[user] = block.timestamp;
         uint256 multiplier = getLoyaltyMultiplier(user);

@@ -5,12 +5,12 @@ import {ERC20} from "solmate/tokens/ERC20.sol";
 import {SafeTransferLib} from "solmate/utils/SafeTransferLib.sol";
 import {Auth, Authority} from "solmate/auth/Auth.sol";
 import "../base/BoringVault.sol";
-import "./AccountantWithRateProviders.sol";
+import "./CommonRates.sol";
 
-contract TellerWithMultiAssetSupport is Auth {
+contract CommonGate is Auth {
     using SafeTransferLib for ERC20;
     BoringVault public immutable VAULT;
-    AccountantWithRateProviders public immutable ACCOUNTANT;
+    CommonRates public immutable ACCOUNTANT;
     
     mapping(address => uint256) public depositTimestamp;
     uint256 public constant SHARE_LOCK_PERIOD = 1 days;
@@ -21,11 +21,11 @@ contract TellerWithMultiAssetSupport is Auth {
         uint256 currentYieldBoost;
     }
 
-    constructor(address _owner, address _vault, address _accountant) 
+    constructor(address _owner, address _vault, address _rates) 
         Auth(_owner, Authority(address(0))) 
     {
         VAULT = BoringVault(payable(_vault));
-        ACCOUNTANT = AccountantWithRateProviders(_accountant);
+        ACCOUNTANT = CommonRates(_rates);
     }
 
     function getHumanStatus(address user) public view returns (HumanStatus memory) {

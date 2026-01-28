@@ -8,8 +8,8 @@ import {SafeTransferLib} from "solmate/utils/SafeTransferLib.sol";
 
 contract BoringVault is ERC4626, Auth {
     using SafeTransferLib for ERC20;
-    address public manager;
-    error BoringVault__OnlyManager();
+    address public strategy;
+    error BoringVault__OnlyStrategy();
 
     constructor(address _owner, string memory _name, string memory _symbol, ERC20 _asset) 
         ERC4626(_asset, _name, _symbol) 
@@ -17,14 +17,14 @@ contract BoringVault is ERC4626, Auth {
     {}
 
     function manage(address target, bytes calldata data, uint256 value) external returns (bytes memory) {
-        if (msg.sender != manager) revert BoringVault__OnlyManager();
+        if (msg.sender != strategy) revert BoringVault__OnlyStrategy();
         (bool success, bytes memory returnData) = target.call{value: value}(data);
         require(success, "BoringVault: Call Failed");
         return returnData;
     }
 
-    function setManager(address _manager) external requiresAuth {
-        manager = _manager;
+    function setStrategy(address _strategy) external requiresAuth {
+        strategy = _strategy;
     }
 
     function enter(address, ERC20, uint256, address to, uint256 shares) external requiresAuth {
