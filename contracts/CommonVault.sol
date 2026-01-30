@@ -32,7 +32,7 @@ contract CommonVault is ERC4626, Ownable {
         lastUpdateBlock[user] = block.number;
     }
 
-    function deposit(uint256 assets, address receiver) public override returns (uint256) {
+   function deposit(uint256 assets, address receiver) public override returns (uint256) {
         uint256 shares = super.deposit(assets, receiver);
         _updatePoints(receiver);
         return shares;
