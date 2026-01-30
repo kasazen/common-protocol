@@ -18,7 +18,7 @@ async function main() {
   const vaultAddress = await vault.getAddress();
   console.log("CommonVault deployed to:", vaultAddress);
 
-  // 3. Export for Frontend
+  // 3. Export for Frontend (this saves you from manual copy-pasting)
   console.log("\n--- COPY THIS INTO common-app/src/config.ts ---");
   console.log(`export const CONTRACT_ADDRESSES = {`);
   console.log(`  usdc: "${usdcAddress}",`);
