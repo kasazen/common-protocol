@@ -13,6 +13,9 @@ contract CommonVault is ERC4626, Ownable {
 
     mapping(address => uint256) public pointsTotal;
     mapping(address => uint256) public lastUpdateBlock;
+    
+    // --- NEW: Verification State ---
+    mapping(address => bool) public isVerified;
     // Store multiple requests per user
     mapping(address => UnbondRequest[]) public unbondRequests;
 
@@ -23,6 +26,17 @@ contract CommonVault is ERC4626, Ownable {
 
     constructor(IERC20 asset) ERC4626(asset) ERC20("Common Vault USDC", "vUSDC") Ownable(msg.sender) {}
 
+    // --- NEW: Verification Logic ---
+    modifier onlyVerified() {
+        require(isVerified[msg.sender], "Common: Not Verified");
+        _;
+    }
+
+    function setVerification(address user, bool status) external onlyOwner {
+        isVerified[user] = status;
+    }
+
+    // --- FIXED: Restored missing function header below ---
     function _updatePoints(address user) internal {
         uint256 currentBalance = balanceOf(user);
         if (currentBalance > 0 && lastUpdateBlock[user] > 0) {
@@ -32,7 +46,8 @@ contract CommonVault is ERC4626, Ownable {
         lastUpdateBlock[user] = block.number;
     }
 
-   function deposit(uint256 assets, address receiver) public override returns (uint256) {
+    // --- UPDATED: Now checks onlyVerified ---
+    function deposit(uint256 assets, address receiver) public override onlyVerified returns (uint256) {
         uint256 shares = super.deposit(assets, receiver);
         _updatePoints(receiver);
         return shares;
@@ -43,8 +58,11 @@ contract CommonVault is ERC4626, Ownable {
         _updatePoints(msg.sender);
 
         uint256 totalShares = balanceOf(msg.sender);
-        uint256 burnAmount = (amount * pointsTotal[msg.sender]) / totalShares;
-        pointsTotal[msg.sender] -= burnAmount;
+        // Safety check to avoid division by zero if totalShares is somehow 0
+        if (totalShares > 0) {
+            uint256 burnAmount = (amount * pointsTotal[msg.sender]) / totalShares;
+            pointsTotal[msg.sender] -= burnAmount;
+        }
         
         _burn(msg.sender, amount);
         
